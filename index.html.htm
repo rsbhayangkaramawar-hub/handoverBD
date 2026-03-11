@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHOENIX ONLINE | VVIP BHARADAKSA v15.9</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+    <style>
+        :root { 
+            --bg-gradient: radial-gradient(circle at 0% 0%, #1e1e3f 0%, #0a0a12 100%);
+            --accent-cyan: #4cc9f0;
+            --accent-purple: #7209b7;
+            --accent-pink: #f72585;
+            --accent-green: #4ade80;
+            --accent-yellow: #fbbf24;
+            --glass-card: rgba(30, 30, 60, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-gradient); color: #f8fafc; height: 100vh; margin: 0; display: flex; overflow: hidden; }
+        .glass { background: var(--glass-card); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 24px; }
+        
+        /* Triage Animations */
+        .card-stabil { border-left: 8px solid var(--accent-green); }
+        .card-observasi { border-left: 8px solid var(--accent-yellow); }
+        .card-ketat { border-left: 8px solid var(--accent-pink); animation: pulse-pink 2s infinite; }
+        @keyframes pulse-pink { 0%, 100% { box-shadow: 0 0 15px rgba(247, 37, 133, 0.2); } 50% { box-shadow: 0 0 40px rgba(247, 37, 133, 0.5); } }
+
+        /* TV Mode */
+        .tv-mode .sidebar, .tv-mode .right-panel, .tv-mode header { display: none !important; }
+        .tv-mode #gridContainer { padding: 40px; height: 100vh; width: 100vw; align-content: center; }
+        
+        .running-text-bar { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 18px 0; z-index: 9999; border-top: 2px solid var(--accent-cyan); }
+        .tv-mode .running-text-bar { display: block; }
+        .marquee { white-space: nowrap; overflow: hidden; }
+        .marquee-content { display: inline-block; animation: marquee 35s linear infinite; font-weight: 800; text-transform: uppercase; }
+        @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+        .patient-card { transition: all 0.3s ease; }
+        .patient-card:hover { transform: translateY(-5px); filter: brightness(1.1); }
+        input, textarea, select { background: rgba(0,0,0,0.4) !important; border: 1px solid var(--glass-border) !important; color: white !important; outline: none; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--accent-cyan); border-radius: 10px; }
+    </style>
+</head>
+<body class="p-6 gap-6">
+
+    <button onclick="toggleTV()" id="btnExitTV" class="fixed top-8 right-8 z-[10000] hidden bg-cyan-500 text-black w-12 h-12 flex items-center justify-center rounded-xl shadow-2xl">
+        <i class="fas fa-tv"></i>
+    </button>
+
+    <aside class="sidebar w-80 flex flex-col gap-4 shrink-0 h-full">
+        <div class="glass p-5 flex items-center justify-between">
+            <span class="text-[10px] font-black text-cyan-400">BHARADAKSA CLOUD v15.9</span>
+            <div id="syncStatus" class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#4ade80]"></div>
+        </div>
+
+        <div class="glass flex-1 p-5 flex flex-col gap-4 overflow-hidden">
+            <button onclick="generateHandover()" class="w-full bg-green-600 hover:bg-green-500 py-4 rounded-xl text-[11px] font-black uppercase flex items-center justify-center gap-2 transition-all">
+                <i class="fab fa-whatsapp text-lg"></i> Kirim Laporan WA
+            </button>
+
+            <div class="p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-xl">
+                <p id="targetName" class="text-xs font-black text-white text-center italic uppercase">Pilih Bed Pasien</p>
+            </div>
+            
+            <div class="flex flex-col flex-1 gap-4 overflow-hidden">
+                <div class="flex flex-col max-h-[45%]">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-2">Tindakan / Task</h3>
+                    <div class="flex gap-2 mb-2">
+                        <input type="text" id="taskInput" placeholder="Tambah tugas..." class="flex-1 rounded-lg px-3 py-2 text-[10px]">
+                        <button id="btnAddTask" class="bg-cyan-500 text-black px-4 rounded-lg font-bold hover:bg-white transition-colors">+</button>
+                    </div>
+                    <div id="taskList" class="flex flex-col gap-2 overflow-y-auto pr-1"></div>
+                </div>
+
+                <div class="flex flex-col flex-1 border-t border-white/5 pt-4 overflow-hidden">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-2">Medical Note (Real-time)</h3>
+                    <textarea id="noteText" class="w-full flex-1 rounded-xl p-3 text-[11px] text-slate-300 resize-none leading-relaxed" placeholder="Tulis diagnosa atau catatan penting..."></textarea>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content flex-1 flex flex-col gap-6 h-full">
+        <header class="glass h-20 flex items-center justify-between px-8 shrink-0">
+            <div>
+                <h2 class="text-2xl font-black italic uppercase tracking-tighter">VVIP <span class="text-purple-500">BHARADAKSA</span></h2>
+                <p class="text-[8px] font-bold text-slate-500 tracking-widest">REAL-TIME CLINICAL MONITORING</p>
+            </div>
+            <div class="text-right">
+                <p id="clock" class="text-3xl font-black text-cyan-400 tracking-tighter">00:00:00</p>
+                <p id="date" class="text-[9px] font-bold text-slate-500 uppercase"></p>
+            </div>
+        </header>
+        <div class="flex-1 overflow-y-auto">
+            <div id="gridContainer" class="grid gap-6 pb-10"></div>
+        </div>
+    </main>
+
+    <aside class="right-panel w-64 flex flex-col gap-4 h-full">
+        <div class="glass p-5">
+            <h3 class="text-[10px] font-black text-slate-400 uppercase mb-2">Bed Occupancy</h3>
+            <div class="flex justify-between items-end mb-2">
+                <span id="borVal" class="text-4xl font-black text-cyan-400">0%</span>
+                <span id="bedStatus" class="text-[10px] font-bold text-purple-400 uppercase">0/12 Bed</span>
+            </div>
+            <div class="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
+                <div id="borBar" class="h-full bg-cyan-500 transition-all duration-1000" style="width: 0%"></div>
+            </div>
+        </div>
+        <div class="glass p-5 flex-1 overflow-hidden flex flex-col">
+            <h3 class="text-[10px] font-black text-slate-400 uppercase mb-3">DPJP Terdaftar</h3>
+            <div id="docList" class="space-y-2 overflow-y-auto pr-2 flex-1 italic"></div>
+        </div>
+    </aside>
+
+    <div class="running-text-bar"><div class="marquee"><div class="marquee-content text-cyan-400 text-xl" id="runningTextContent">Sistem Bharadaksa Online v15.9 Siap Digunakan...</div></div></div>
+
+    <div id="modal" class="fixed inset-0 bg-black/95 backdrop-blur-2xl z-[100] hidden items-center justify-center p-6">
+        <div class="glass w-full max-w-md p-8 border-cyan-500/40">
+            <h2 class="text-xl font-black text-cyan-400 italic mb-6 uppercase">Registrasi Pasien</h2>
+            <form id="regForm" class="space-y-4">
+                <input type="hidden" id="rBed">
+                <input type="text" id="rNama" placeholder="NAMA LENGKAP" class="w-full p-4 rounded-xl font-bold uppercase" required>
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" id="rUmur" placeholder="USIA" class="w-full p-4 rounded-xl" required>
+                    <select id="rStatus" class="w-full p-4 rounded-xl bg-slate-900 font-bold">
+                        <option value="STABIL">STABIL</option>
+                        <option value="OBSERVASI">OBSERVASI</option>
+                        <option value="KETAT">KETAT (PINK)</option>
+                    </select>
+                </div>
+                <select id="rDpjp" class="w-full p-4 rounded-xl bg-slate-900 font-bold uppercase" required></select>
+                <button type="submit" class="w-full bg-cyan-500 p-4 rounded-xl text-black font-black uppercase mt-4 shadow-lg shadow-cyan-500/20">Aktifkan Bed</button>
+                <button type="button" onclick="closeModal()" class="w-full text-slate-500 text-[10px] font-black uppercase mt-2">Batal</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="reportModal" class="fixed inset-0 bg-black/95 backdrop-blur-2xl z-[200] hidden items-center justify-center p-6">
+        <div class="glass w-full max-w-2xl p-8 border-green-500/40 flex flex-col max-h-[90vh]">
+            <h2 class="text-xl font-black text-green-400 italic mb-4 uppercase">WhatsApp Handover Report</h2>
+            <div id="reportArea" class="bg-black/40 p-6 rounded-xl overflow-y-auto font-mono text-xs text-green-400 border border-white/5 whitespace-pre-wrap flex-1 italic"></div>
+            <div class="grid grid-cols-2 gap-4 mt-6">
+                <button onclick="sendToWhatsApp()" class="bg-green-600 p-4 rounded-xl text-white font-black uppercase flex items-center justify-center gap-2">Kirim Sekarang</button>
+                <button onclick="closeReport()" class="bg-slate-800 p-4 rounded-xl text-white font-black uppercase">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+
+        // --- KONFIGURASI FIREBASE ANDA ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAkPxCfFoMTak8EZAxFzWdflkCijWQ4XsM",
+            authDomain: "laporan-baru-maret-2026.firebaseapp.com",
+            projectId: "laporan-baru-maret-2026",
+            storageBucket: "laporan-baru-maret-2026.firebasestorage.app",
+            messagingSenderId: "814062227301",
+            appId: "1:814062227301:web:bd7b42aaf182f115c11b8c",
+            databaseURL: "https://laporan-baru-maret-2026-default-rtdb.firebaseio.com"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const patientsRef = ref(database, 'vvip_patients');
+
+        const BEDS = ["VVIP 01", "VVIP 02", "VVIP 03", "VVIP 04", "BD 05-A", "BD 05-B", "BD 06-A", "BD 06-B", "BD 07-A", "BD 07-B", "BD 08-A", "BD 08-B"];
+        const masterDPJP = ["DR. ANDI, SP.BS", "DR. BUDI, SP.PD", "DR. CITRA, SP.S", "DR. DEDI, SP.JP", "DR. EKA, SP.AN", "DR. FAHRI, SP.OG"];
+        
+        let patientsData = {};
+        let selectedBedId = null;
+
+        // --- REAL-TIME DATA LISTENER ---
+        onValue(patientsRef, (snapshot) => {
+            patientsData = snapshot.val() || {};
+            renderGrid();
+            updateStats();
+            if (selectedBedId) {
+                renderTasks();
+                if (document.activeElement !== document.getElementById('noteText')) {
+                    document.getElementById('noteText').value = patientsData[selectedBedId]?.note || "";
+                }
+            }
+        });
+
+        // --- CORE FUNCTIONS ---
+        window.openModalWithBed = (bed) => {
+            document.getElementById('rBed').value = bed;
+            const drop = document.getElementById('rDpjp');
+            drop.innerHTML = '<option value="">-- PILIH DPJP --</option>';
+            masterDPJP.forEach(d => drop.innerHTML += `<option value="${d}">${d}</option>`);
+            document.getElementById('modal').style.display = 'flex';
+        };
+
+        window.closeModal = () => document.getElementById('modal').style.display = 'none';
+
+        document.getElementById('regForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const bed = document.getElementById('rBed').value;
+            const patientObj = {
+                nama: document.getElementById('rNama').value.toUpperCase(),
+                umur: document.getElementById('rUmur').value,
+                status: document.getElementById('rStatus').value,
+                dpjp: document.getElementById('rDpjp').value,
+                note: "",
+                tasks: []
+            };
+            await set(ref(database, 'vvip_patients/' + bed.replace(' ', '_')), patientObj);
+            closeModal();
+            e.target.reset();
+        };
+
+        window.selectPatient = (bedId) => {
+            if(document.body.classList.contains('tv-mode')) return;
+            selectedBedId = bedId;
+            const p = patientsData[bedId];
+            document.getElementById('targetName').innerText = `${bedId.replace('_',' ')} | ${p.nama}`;
+            document.getElementById('noteText').value = p.note || "";
+            renderTasks();
+            renderGrid();
+        };
+
+        // Tasks Logic
+        document.getElementById('btnAddTask').onclick = () => {
+            const inp = document.getElementById('taskInput');
+            if(!selectedBedId || !inp.value) return;
+            const tasks = patientsData[selectedBedId].tasks || [];
+            tasks.push({ text: inp.value, done: false });
+            update(ref(database, 'vvip_patients/' + selectedBedId), { tasks: tasks });
+            inp.value = '';
+        };
+
+        window.toggleTask = (i) => {
+            const tasks = patientsData[selectedBedId].tasks;
+            tasks[i].done = !tasks[i].done;
+            update(ref(database, 'vvip_patients/' + selectedBedId), { tasks: tasks });
+        };
+
+        window.deleteTask = (i) => {
+            const tasks = patientsData[selectedBedId].tasks;
+            tasks.splice(i, 1);
+            update(ref(database, 'vvip_patients/' + selectedBedId), { tasks: tasks });
+        };
+
+        // Note Sync
+        document.getElementById('noteText').oninput = (e) => {
+            if(!selectedBedId) return;
+            const val = e.target.value;
+            clearTimeout(window.saveTimeout);
+            window.saveTimeout = setTimeout(() => {
+                update(ref(database, 'vvip_patients/' + selectedBedId), { note: val });
+            }, 600);
+        };
+
+        window.deleteP = (id) => {
+            if(confirm(`Checkout bed ${id.replace('_',' ')}?`)) {
+                remove(ref(database, 'vvip_patients/' + id));
+                if(selectedBedId === id) selectedBedId = null;
+            }
+        };
+
+        // --- UI RENDERING ---
+        function renderGrid() {
+            const container = document.getElementById('gridContainer');
+            const isTV = document.body.classList.contains('tv-mode');
+            container.innerHTML = '';
+            
+            container.style.gridTemplateColumns = isTV ? (Object.keys(patientsData).length <= 6 ? "repeat(2, 1fr)" : "repeat(3, 1fr)") : "repeat(auto-fill, minmax(280px, 1fr))";
+
+            BEDS.forEach(bed => {
+                const bedKey = bed.replace(' ', '_');
+                const p = patientsData[bedKey];
+                if(p) {
+                    let tClass = p.status === 'KETAT' ? 'card-ketat' : (p.status === 'OBSERVASI' ? 'card-observasi' : 'card-stabil');
+                    let tasksLeft = (p.tasks || []).filter(t => !t.done).length;
+                    
+                    container.innerHTML += `
+                        <div onclick="selectPatient('${bedKey}')" class="patient-card glass p-8 cursor-pointer ${tClass} ${selectedBedId === bedKey ? 'bg-white/10 ring-2 ring-cyan-500' : ''}">
+                            <div class="flex justify-between items-start mb-4">
+                                <span class="bed-badge px-3 py-1 bg-black/50 rounded-lg text-cyan-400 font-black text-[10px]">${bed}</span>
+                                ${tasksLeft > 0 ? `<span class="bg-pink-600 text-[8px] px-3 py-1 rounded-full animate-bounce font-black">TASK: ${tasksLeft}</span>` : ''}
+                            </div>
+                            <h3 class="${isTV ? 'text-5xl' : 'text-xl'} font-black uppercase leading-tight">${p.nama}</h3>
+                            <p class="${isTV ? 'text-2xl' : 'text-[10px]'} font-bold mt-2 text-slate-400">${p.umur} THN • ${p.status}</p>
+                            <div class="mt-4 pt-4 border-t border-white/5 flex justify-between items-center text-[10px]">
+                                <span class="italic font-bold text-cyan-500/80">DPJP: ${p.dpjp}</span>
+                                <button onclick="event.stopPropagation(); deleteP('${bedKey}')" class="text-slate-600 hover:text-red-500"><i class="fas fa-sign-out-alt"></i></button>
+                            </div>
+                        </div>`;
+                } else if (!isTV) {
+                    container.innerHTML += `<div onclick="openModalWithBed('${bed}')" class="glass border-dashed border-white/10 opacity-20 hover:opacity-100 min-h-[160px] flex flex-col items-center justify-center cursor-pointer transition-all">
+                        <i class="fas fa-plus mb-2 text-cyan-400"></i><span class="text-[10px] font-black uppercase">${bed}</span>
+                    </div>`;
+                }
+            });
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('taskList'); list.innerHTML = '';
+            if(!selectedBedId || !patientsData[selectedBedId]) return;
+            (patientsData[selectedBedId].tasks || []).forEach((t, i) => {
+                list.innerHTML += `
+                    <div class="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5 ${t.done ? 'opacity-30' : ''}">
+                        <div class="flex items-center gap-2 cursor-pointer flex-1" onclick="toggleTask(${i})">
+                            <i class="fas ${t.done ? 'fa-check-circle text-green-500' : 'fa-circle text-cyan-500'} text-[10px]"></i>
+                            <span class="text-[10px] font-bold uppercase ${t.done ? 'line-through text-slate-500' : ''}">${t.text}</span>
+                        </div>
+                        <button onclick="deleteTask(${i})" class="text-[10px] hover:text-red-500 ml-2">✕</button>
+                    </div>`;
+            });
+        }
+
+        function updateStats() {
+            const count = Object.keys(patientsData).length;
+            const bor = Math.round((count/12)*100);
+            document.getElementById('borVal').innerText = bor + '%';
+            document.getElementById('bedStatus').innerText = `${count}/12 BED`;
+            document.getElementById('borBar').style.width = bor + '%';
+            
+            const list = document.getElementById('docList'); list.innerHTML = '';
+            const activeDocs = [...new Set(Object.values(patientsData).map(p => p.dpjp))];
+            activeDocs.forEach(d => list.innerHTML += `<div class="bg-black/20 p-2 rounded-lg text-[9px] font-bold uppercase border border-white/5">👨‍⚕️ ${d}</div>`);
+        }
+
+        // --- GLOBAL HELPERS ---
+        window.toggleTV = () => {
+            document.body.classList.toggle('tv-mode');
+            document.getElementById('btnExitTV').classList.toggle('hidden');
+            renderGrid();
+        };
+
+        window.generateHandover = () => {
+            const activeBeds = Object.keys(patientsData);
+            if(activeBeds.length === 0) return alert("Belum ada pasien terdaftar.");
+            let report = `*HANDOVER VVIP BHARADAKSA*\n_${new Date().toLocaleString('id-ID')}_\n`;
+            report += `==============================\n\n`;
+            activeBeds.forEach(bed => {
+                const p = patientsData[bed];
+                report += `*${bed.replace('_',' ')}* - _${p.nama}_\n`;
+                report += `DPJP: ${p.dpjp}\n`;
+                report += `Status: ${p.status}\n`;
+                report += `Note: ${p.note || '-'}\n`;
+                const pt = (p.tasks || []).filter(t => !t.done).map(t => `   • ${t.text.toUpperCase()}`).join('\n');
+                if(pt) report += `Tindak Lanjut:\n${pt}\n`;
+                report += `------------------------------\n`;
+            });
+            document.getElementById('reportArea').innerText = report;
+            document.getElementById('reportModal').style.display = 'flex';
+        };
+
+        window.sendToWhatsApp = () => {
+            const text = encodeURIComponent(document.getElementById('reportArea').innerText);
+            window.open(`https://wa.me/?text=${text}`, '_blank');
+        };
+
+        window.closeReport = () => document.getElementById('reportModal').style.display = 'none';
+
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('id-ID', {hour12:false});
+            document.getElementById('date').innerText = new Date().toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+        }, 1000);
+
+    </script>
+</body>
+</html>
